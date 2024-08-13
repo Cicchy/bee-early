@@ -46,11 +46,11 @@ class CourseRepositoryImp: CourseRepository {
     }
 
     override suspend fun addCourse(course: Course) {
-        db.child("courses").child(course.courseId!!).setValue(course)
+        db.child("courses").child(course.courseId!!).setValue(course).addOnCompleteListener {  }
     }
 
     override suspend fun deleteCourse(course: Course) {
-        TODO("Not yet implemented")
+        db.child("courses").child(course.courseId!!).removeValue()
     }
 
 }
