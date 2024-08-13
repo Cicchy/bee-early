@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "965050247540",
+    "firebase_url": "https://beeearly-f850d-default-rtdb.firebaseio.com",
+    "project_id": "beeearly-f850d",
+    "storage_bucket": "beeearly-f850d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:965050247540:android:d5d36956a7df23c1406421",
+        "android_client_info": {
+          "package_name": "com.beearly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqD0JuYJY4WEcj2MQJpsYBkiLsI7QGYes"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:965050247540:android:8458eed197c5c4be406421",
+        "android_client_info": {
+          "package_name": "com.beeearly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqD0JuYJY4WEcj2MQJpsYBkiLsI7QGYes"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
