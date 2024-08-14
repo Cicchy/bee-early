@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.system.exitProcess
 
 class CourseRepositoryImp: CourseRepository {
     private val db = FirebaseDatabase.getInstance().getReference("userData")
@@ -26,31 +27,41 @@ class CourseRepositoryImp: CourseRepository {
             }
             response.data = courses
 
-        } catch (exception: Exception) {
-            response.exception = exception
+        } catch (e: Exception) {
+            response.exception = e
         }
         return response
     }
-
     override suspend fun getCourseByID(id: String): Response<Course>? {
         val response = Response<Course>()
         try {
             val snapshot = db.child("courses").child(id).get().await().children.map {snapshot ->
                 snapshot.getValue(Course::class.java)
             }
-        } catch (exception: Exception){
-            response.exception = exception
+        } catch (e: Exception){
+            response.exception = e
         }
         return response
 
     }
-
-    override suspend fun addCourse(course: Course) {
-        db.child("courses").child(course.courseId!!).setValue(course).addOnCompleteListener {  }
+    override suspend fun addCourse(course: Course): Response<Unit> {
+        val response = Response<Unit>()
+        try {
+            db.child("courses").child(course.courseId!!).setValue(course).await()
+        }catch (e: Exception)
+        {
+            response.exception = e
+        }
+        return response
     }
-
-    override suspend fun deleteCourse(course: Course) {
-        db.child("courses").child(course.courseId!!).removeValue()
+    override suspend fun deleteCourse(course: Course): Response<Unit> {
+        val response = Response<Unit>()
+        try {
+            db.child("courses").child(course.courseId!!).removeValue().await()
+        }catch (e: Exception){
+            response.exception = e
+        }
+        return response
     }
 
 }
