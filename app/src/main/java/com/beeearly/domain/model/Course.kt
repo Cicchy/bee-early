@@ -1,9 +1,9 @@
 package com.beeearly.domain.model
 
+import com.beeearly.presentation.util.UserRole
+
 data class Course(
     val courseId: String ?= null,
     val title: String ?= null,
-    val members: MutableList<String> ?= null,
-    val authorId: String ?= null,
-    val admin: MutableList<String> ?= null
+    val members: MutableMap<String, UserRole> ?= null,
 )

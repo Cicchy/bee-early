@@ -4,6 +4,8 @@ import com.beeearly.data.Response
 import com.beeearly.domain.model.Course
 import com.beeearly.domain.model.User
 import com.beeearly.domain.repository.CourseRepository
+import com.beeearly.presentation.util.UserRole
+import com.beeearly.presentation.util.UserRole.ADMIN
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 
@@ -17,33 +19,42 @@ class CourseViewModel(
     suspend fun getCourseByID(id: String){
         repository.getCourseByID(id)
     }
-
     suspend fun addCourse(course: Course){
         repository.addCourse(course)
     }
-    suspend fun deleteCourse(course: Course){
-        repository.deleteCourse(course)
+    suspend fun Course.deleteCourse(user: User): Response<Unit>{
+        val response = Response<Unit>()
+        try {
+            if (this.getRole(user) == ADMIN){
+                repository.deleteCourse(this)
+            }else{
+                response.exception = java.lang.Exception("${user.uid} does not have admin priviliges")
+            }
+        }catch (e:Exception){
+            response.exception = e
+        }
+
+        return response
     }
     suspend fun Course.getMembers(): Response<List<User>> {
-        val course = repository.getCourseByID(this.courseId!!)
         val response = Response<List<User>>()
-        if(course!!.data != null){
-            val uids = course!!.data!!.members!!.toList()
-            val users = uids.mapNotNull { userID ->
-                db.child("userData").child(userID).get().await().getValue(User::class.java)
+        try {
+            val uids = this.members!!.toList()
+            val users = uids.mapNotNull { user ->
+                db.child("userData").child(user.first).get().await().getValue(User::class.java)
             }
             response.data = users
-        }else{
-            response.exception  = java.lang.Exception("Unable to retrive $courseId")
+
+        }catch (e: Exception){
+            response.exception = e
         }
         return response
     }
     suspend fun Course.addMember(user: User): Response<Unit> {
         val response = Response<Unit>()
-        val course = repository.getCourseByID(this.courseId!!)
         try {
-            course!!.data!!.members!!.add(user.uid)
-            course.data?.let {
+            this.members!![user.uid] = UserRole.MEMBER
+            this.let {
                 repository.addCourse(it)
             }
         }catch (e: Exception){
@@ -51,26 +62,33 @@ class CourseViewModel(
         }
         return response
     }
-    suspend fun Course.removeMember(user: User): Response<Unit> {
+    suspend fun Course.removeMember(user: User, target: User): Response<Unit> {
         val response = Response<Unit>()
-        val course = repository.getCourseByID(this.courseId!!)
         try {
-            course!!.data!!.members!!.remove(user.uid)
-            course.data?.let {
-                repository.addCourse(it)
+            if (this.getRole(user) == ADMIN){
+                this.members!!.remove(target.uid)
+                this.let {
+                    repository.addCourse(it)
+                }
+            }else{
+                response.exception = java.lang.Exception("${user.uid} does not have admin priviliges")
             }
         }catch (e: Exception){
             response.exception = e
         }
+
         return response
     }
-    suspend fun Course.setAdmin(user: User): Response<Unit>{
+    suspend fun Course.setAdmin(user: User, target: User): Response<Unit>{
         val response = Response<Unit>()
-        val course = repository.getCourseByID(this.courseId!!)
         try {
-            course!!.data!!.admin!!.add(user.uid)
-            course.data?.let {
-                repository.addCourse(it)
+            if(this.getRole(user) == ADMIN){
+                this.members!![target.uid] = ADMIN
+                this.let {
+                    repository.addCourse(it)
+                }
+            }else{
+                response.exception = java.lang.Exception("${user.uid} does not have admin priviliges")
             }
         }catch (e: Exception){
             response.exception = e
@@ -79,15 +97,18 @@ class CourseViewModel(
     }
     suspend fun Course.removeAdmin(user: User): Response<Unit>{
         val response = Response<Unit>()
-        val course = repository.getCourseByID(this.courseId!!)
         try {
-            course!!.data!!.admin!!.remove(user.uid)
-            course.data?.let {
+            this.members!![user.uid] = UserRole.MEMBER
+            this.let {
                 repository.addCourse(it)
             }
         }catch (e: Exception){
             response.exception = e
         }
         return response
+    }
+
+    fun Course.getRole(user: User): UserRole? {
+        return this.members!![user.uid]
     }
 }
