@@ -26,9 +26,8 @@ class CourseRepositoryImp: CourseRepository {
     override suspend fun getCourseByID(id: String): Response<Course>? {
         val response = Response<Course>()
         try {
-            val snapshot = db.child("courses").child(id).get().await().children.map {snapshot ->
-                snapshot.getValue(Course::class.java)
-            }
+            val course = db.child("courses").child(id).get().await().getValue(Course::class.java)
+            response.data = course
         } catch (e: Exception){
             response.exception = e
         }

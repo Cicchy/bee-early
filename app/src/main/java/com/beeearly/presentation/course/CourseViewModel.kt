@@ -13,13 +13,14 @@ class CourseViewModel(
     private val repository: CourseRepository
 ): ViewModel(){
     private val db = FirebaseDatabase.getInstance().getReference("userData")
-    suspend fun getCourses(user: User){
-        repository.getCourses(user.uid)
+    suspend fun User.getCourses(){
+        repository.getCourses(this.uid)
     }
     suspend fun getCourseByID(id: String){
         repository.getCourseByID(id)
     }
-    suspend fun addCourse(course: Course){
+    suspend fun User.addCourse(course: Course){
+        course.members?.set(this.uid, ADMIN)
         repository.addCourse(course)
     }
     suspend fun Course.deleteCourse(user: User): Response<Unit>{
@@ -28,7 +29,7 @@ class CourseViewModel(
             if (this.getRole(user) == ADMIN){
                 repository.deleteCourse(this)
             }else{
-                response.exception = java.lang.Exception("${user.uid} does not have admin priviliges")
+                response.exception = java.lang.Exception("${user.uid} does not have admin privileges")
             }
         }catch (e:Exception){
             response.exception = e
@@ -71,7 +72,7 @@ class CourseViewModel(
                     repository.addCourse(it)
                 }
             }else{
-                response.exception = java.lang.Exception("${user.uid} does not have admin priviliges")
+                response.exception = java.lang.Exception("${user.uid} does not have admin privileges")
             }
         }catch (e: Exception){
             response.exception = e
@@ -88,7 +89,7 @@ class CourseViewModel(
                     repository.addCourse(it)
                 }
             }else{
-                response.exception = java.lang.Exception("${user.uid} does not have admin priviliges")
+                response.exception = java.lang.Exception("${user.uid} does not have admin privileges")
             }
         }catch (e: Exception){
             response.exception = e
@@ -108,7 +109,7 @@ class CourseViewModel(
         return response
     }
 
-    fun Course.getRole(user: User): UserRole? {
+    private fun Course.getRole(user: User): UserRole? {
         return this.members!![user.uid]
     }
 }

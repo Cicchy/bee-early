@@ -2,7 +2,6 @@ package com.beeearly.domain.repository
 
 import com.beeearly.data.Response
 import com.beeearly.domain.model.Course
-import kotlinx.coroutines.flow.Flow
 
 interface CourseRepository {
     // To manage courses
