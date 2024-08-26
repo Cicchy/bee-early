@@ -2,6 +2,7 @@ package com.beeearly.domain.repository
 import com.beeearly.data.Response
 import com.beeearly.domain.model.Course
 import com.beeearly.domain.model.User
+import com.beeearly.presentation.util.UserRole
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 
@@ -23,7 +24,7 @@ class CourseRepositoryImp: CourseRepository {
         }
         return response
     }
-    override suspend fun getCourseByID(id: String): Response<Course>? {
+    override suspend fun getCourseByID(id: String): Response<Course> {
         val response = Response<Course>()
         try {
             val course = db.child("courses").child(id).get().await().getValue(Course::class.java)
@@ -44,16 +45,20 @@ class CourseRepositoryImp: CourseRepository {
         }
         return response
     }
-    override suspend fun deleteCourse(course: Course): Response<Unit> {
+    override suspend fun deleteCourse(user: String, course: Course): Response<Unit> {
         val response = Response<Unit>()
         try {
+            if(course.getRole(user) == UserRole.AUTHOR) {
             db.child("courses").child(course.courseId!!).removeValue().await()
+            }
         }catch (e: Exception){
             response.exception = e
         }
         return response
 
-        val user = User("e","e","e")
+    }
+    override fun Course.getRole(user: String): UserRole? {
+        return this.members!![user]
     }
 
 }

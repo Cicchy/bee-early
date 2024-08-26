@@ -1,5 +1,9 @@
 package com.beeearly.presentation.course
+import android.media.MediaDrm.OnEventListener
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.beeearly.data.Response
 import com.beeearly.domain.model.Course
 import com.beeearly.domain.model.User
@@ -7,109 +11,88 @@ import com.beeearly.domain.repository.CourseRepository
 import com.beeearly.presentation.util.UserRole
 import com.beeearly.presentation.util.UserRole.ADMIN
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class CourseViewModel(
     private val repository: CourseRepository
 ): ViewModel(){
     private val db = FirebaseDatabase.getInstance().getReference("userData")
-    suspend fun User.getCourses(){
-        repository.getCourses(this.uid)
-    }
-    suspend fun getCourseByID(id: String){
-        repository.getCourseByID(id)
-    }
-    suspend fun User.addCourse(course: Course){
-        course.members?.set(this.uid, ADMIN)
-        repository.addCourse(course)
-    }
-    suspend fun Course.deleteCourse(user: User): Response<Unit>{
-        val response = Response<Unit>()
-        try {
-            if (this.getRole(user) == ADMIN){
-                repository.deleteCourse(this)
-            }else{
-                response.exception = java.lang.Exception("${user.uid} does not have admin privileges")
-            }
-        }catch (e:Exception){
-            response.exception = e
-        }
 
-        return response
-    }
-    suspend fun Course.getMembers(): Response<List<User>> {
-        val response = Response<List<User>>()
-        try {
-            val uids = this.members!!.toList()
-            val users = uids.mapNotNull { user ->
-                db.child("userData").child(user.first).get().await().getValue(User::class.java)
-            }
-            response.data = users
+    private val _getCourseByIdStatus = MutableLiveData<Response<Course>>()
+    val getCourseByIdStatus : LiveData<Response<Course>> get() = _getCourseByIdStatus
 
-        }catch (e: Exception){
-            response.exception = e
-        }
-        return response
-    }
-    suspend fun Course.addMember(user: User): Response<Unit> {
-        val response = Response<Unit>()
-        try {
-            this.members!![user.uid] = UserRole.MEMBER
-            this.let {
-                repository.addCourse(it)
-            }
-        }catch (e: Exception){
-            response.exception = e
-        }
-        return response
-    }
-    suspend fun Course.removeMember(user: User, target: User): Response<Unit> {
-        val response = Response<Unit>()
-        try {
-            if (this.getRole(user) == ADMIN){
-                this.members!!.remove(target.uid)
-                this.let {
-                    repository.addCourse(it)
-                }
-            }else{
-                response.exception = java.lang.Exception("${user.uid} does not have admin privileges")
-            }
-        }catch (e: Exception){
-            response.exception = e
-        }
+    private val _getCoursesStatus = MutableLiveData<Response<List<Course>>>()
+    val getCoursesStatus : LiveData<Response<List<Course>>> get() = _getCoursesStatus
 
-        return response
-    }
-    suspend fun Course.setAdmin(user: User, target: User): Response<Unit>{
-        val response = Response<Unit>()
-        try {
-            if(this.getRole(user) == ADMIN){
-                this.members!![target.uid] = ADMIN
-                this.let {
-                    repository.addCourse(it)
-                }
-            }else{
-                response.exception = java.lang.Exception("${user.uid} does not have admin privileges")
-            }
-        }catch (e: Exception){
-            response.exception = e
+    private val _addCourseStatus = MutableLiveData<Response<Unit>>()
+    val addCourseStatus : LiveData<Response<Unit>> get() = _addCourseStatus
+
+    private val _deleteCourseStatus = MutableLiveData<Response<Unit>>()
+    val deleteCourseStatus : LiveData<Response<Unit>> get() = _deleteCourseStatus
+
+    private val _addMemberStatus = MutableLiveData<Response<Unit>>()
+    val addMemberStatus : LiveData<Response<Unit>> get() = _addMemberStatus
+
+    private val _deleteMemberStatus = MutableLiveData<Response<Unit>>()
+    val deleteMemberStatus : LiveData<Response<Unit>> get() = _deleteMemberStatus
+
+    private val _setAdminStatus = MutableLiveData<Response<Unit>>()
+    val setAdminStatus : LiveData<Response<Unit>> get() = setAdminStatus
+
+    private val _deleteAdminStatus = MutableLiveData<Response<Unit>>()
+    val deleteAdminStatus : LiveData<Response<Unit>> get() = setAdminStatus
+
+    fun getCourses(user: String): LiveData<Response<List<Course>>> {
+        viewModelScope.launch {
+            val response = repository.getCourses(user)
+            _getCoursesStatus.postValue(response)
         }
-        return response
-    }
-    suspend fun Course.removeAdmin(user: User): Response<Unit>{
-        val response = Response<Unit>()
-        try {
-            this.members!![user.uid] = UserRole.MEMBER
-            this.let {
-                repository.addCourse(it)
-            }
-        }catch (e: Exception){
-            response.exception = e
-        }
-        return response
+        return getCoursesStatus
     }
 
-    private fun Course.getRole(user: User): UserRole? {
-        return this.members!![user.uid]
+    fun getCourseByID(id: String): LiveData<Response<Course>> {
+        viewModelScope.launch{
+            val response = repository.getCourseByID(id)
+            _getCourseByIdStatus.postValue(response!!)
+        }
+        return  getCourseByIdStatus
     }
+
+    suspend fun addCourse(course: Course): LiveData<Response<Unit>> {
+        viewModelScope.launch {
+            val response = repository.addCourse(course)
+            _addCourseStatus.postValue(response!!)
+        }
+        return addCourseStatus
+    }
+
+    suspend fun deleteCourse(user: String, course: Course): LiveData<Response<Unit>> {
+        viewModelScope.launch {
+            val response = repository.deleteCourse(user, course)
+            _deleteCourseStatus.postValue(response!!)
+        }
+        return deleteCourseStatus
+    }
+
+    suspend fun addMember(user: User, target: User, course: String): Response<Unit>? {
+        TODO("Not yet implemented")
+    }
+
+    suspend fun deleteMember(user: User, target: User): Response<Unit>? {
+        TODO("Not yet implemented")
+    }
+
+    suspend fun setAdmin(user: User, target: User): Response<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    suspend fun deleteAdmin(user: User, target: User): Response<Unit>{
+         TODO("Provide the return value")
+    }
+
+    fun getRole(user: String): UserRole? {
+        TODO("Not yet implemented")
+    }
+
 }
